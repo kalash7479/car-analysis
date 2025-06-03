@@ -9,7 +9,7 @@ st.set_page_config(page_title="Car MSRP Visualizer", layout="wide")
 st.title("Car MSRP Visualizer")
 
 # Upload CSV file
-uploaded_file = st.file_uploader("Upload CARS.csv", type=["csv"])
+uploaded_file = st.file_uploader("CARS.csv", type=["csv"])
 
 if uploaded_file is not None:
     # Read and clean the data
