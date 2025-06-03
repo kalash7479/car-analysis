@@ -18,12 +18,12 @@ if uploaded_file is not None:
         # Show column names for debugging
         st.write("Columns in uploaded file:", df.columns.tolist())
 
-        # Check essential columns
-        required_columns = ['Make', 'Model', 'Type', 'Category', 'MSRP']
+        # Check required columns
+        required_columns = ['Make', 'Model', 'Type', 'MSRP']
         if not all(col in df.columns for col in required_columns):
             st.error(f"The CSV file must contain the following columns: {required_columns}")
         else:
-            # Clean MSRP
+            # Clean MSRP column
             df['MSRP'] = df['MSRP'].replace('[$,]', '', regex=True).astype('int64')
 
             # Brand selection
@@ -35,25 +35,17 @@ if uploaded_file is not None:
             types = filtered_brand['Type'].dropna().unique()
             if len(types) > 0:
                 selected_type = st.selectbox("Select Car Type", sorted(types))
-                filtered_type = filtered_brand[filtered_brand['Type'] == selected_type]
+                filtered_data = filtered_brand[filtered_brand['Type'] == selected_type]
 
-                # Category selection
-                categories = filtered_type['Category'].dropna().unique()
-                if len(categories) > 0:
-                    selected_category = st.selectbox("Select Car Category", sorted(categories))
-                    filtered_data = filtered_type[filtered_type['Category'] == selected_category]
+                # Display filtered data
+                st.dataframe(filtered_data[['Make', 'Model', 'Type', 'MSRP']])
 
-                    # Display filtered data
-                    st.dataframe(filtered_data[['Make', 'Model', 'Type', 'Category', 'MSRP']])
-
-                    # Plot
-                    st.subheader("MSRP by Model")
-                    plt.figure(figsize=(12, 6))
-                    sb.barplot(x='Model', y='MSRP', data=filtered_data)
-                    plt.xticks(rotation=90)
-                    st.pyplot(plt.gcf())
-                else:
-                    st.warning("No categories available for the selected type.")
+                # Plot MSRP by Model
+                st.subheader("MSRP by Model")
+                plt.figure(figsize=(12, 6))
+                sb.barplot(x='Model', y='MSRP', data=filtered_data)
+                plt.xticks(rotation=90)
+                st.pyplot(plt.gcf())
             else:
                 st.warning("No types available for the selected brand.")
     except Exception as e:
