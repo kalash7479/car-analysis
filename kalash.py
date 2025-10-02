@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
 # ==========================
-# Streamlit config
+# Streamlit Config
 # ==========================
 st.set_page_config(page_title="Car MSRP Analyzer", layout="wide")
 st.title("🚗 Car MSRP Analyzer & Prediction App")
@@ -19,15 +19,26 @@ st.title("🚗 Car MSRP Analyzer & Prediction App")
 uploaded_file = st.file_uploader("📂 Upload your CARS.csv file", type=["csv"])
 
 @st.cache_data
-def load_data(file):
+def load_and_clean(file):
     df = pd.read_csv(file)
+
     # Clean MSRP column
-    df['MSRP'] = df['MSRP'].replace('[$,]', '', regex=True).astype('int64')
+    if "MSRP" in df.columns:
+        df['MSRP'] = df['MSRP'].replace('[$,]', '', regex=True)
+        df['MSRP'] = pd.to_numeric(df['MSRP'], errors="coerce")
+
+    # Force numeric conversion for other key features
+    for col in ['Horsepower', 'EngineSize', 'Weight']:
+        if col in df.columns:
+            df[col] = df[col].replace('[^0-9]', '', regex=True)  # remove non-numeric
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df.dropna(inplace=True)  # drop rows with missing numeric values
     return df
 
 if uploaded_file is not None:
     try:
-        df = load_data(uploaded_file)
+        df = load_and_clean(uploaded_file)
 
         required_columns = ['Make', 'Model', 'Type', 'MSRP']
         if not all(col in df.columns for col in required_columns):
@@ -126,12 +137,12 @@ if uploaded_file is not None:
             with tab4:
                 st.subheader("Car MSRP Prediction")
 
-                if "Horsepower" in df.columns and "EngineSize" in df.columns:
-                    # Use Horsepower + EngineSize + Weight if available
-                    features = ['Horsepower', 'EngineSize']
-                    if "Weight" in df.columns:
-                        features.append("Weight")
+                features = []
+                for col in ['Horsepower', 'EngineSize', 'Weight']:
+                    if col in df.columns:
+                        features.append(col)
 
+                if features:
                     X = df[features]
                     y = df["MSRP"]
 
@@ -152,7 +163,7 @@ if uploaded_file is not None:
                         predicted_price = model.predict(input_df)[0]
                         st.success(f"💰 Predicted MSRP: ${predicted_price:,.2f}")
                 else:
-                    st.warning("⚠️ Prediction requires columns like Horsepower, EngineSize, Weight.")
+                    st.warning("⚠️ Prediction requires numeric columns like Horsepower, EngineSize, Weight.")
 
     except Exception as e:
         st.error(f"❌ An error occurred: {e}")
